@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAgri - Advanced Farmer Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2d3748;
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #4a5568;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 20px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .content-section {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            color: #2d3748;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            color: #2d3748;
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .price-card {
+            border-left: 4px solid #48bb78;
+        }
+
+        .price-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #48bb78;
+            margin: 10px 0;
+        }
+
+        .price-trend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            color: #48bb78;
+        }
+
+        .trend-down {
+            color: #f56565;
+        }
+
+        .weather-card {
+            border-left: 4px solid #4299e1;
+            text-align: center;
+        }
+
+        .weather-temp {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4299e1;
+            margin: 15px 0;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .weather-detail {
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .weather-detail-label {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .weather-detail-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .tip-card {
+            border-left: 4px solid #ed8936;
+        }
+
+        .tip-category {
+            background: #fed7aa;
+            color: #c05621;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .chatbot-container {
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-weight: 600;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #2d3748;
+            border: 1px solid #e2e8f0;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .bot-avatar {
+            background: #48bb78;
+            color: white;
+        }
+
+        .user-avatar {
+            background: #4299e1;
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-send {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .chat-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .control-select, .control-input {
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .control-select:focus, .control-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-question {
+            padding: 8px 16px;
+            background: #edf2f7;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .quick-question:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-right: 8px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .suggestion-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .suggestion-btn {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .user-profile-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #4a5568;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .message-timestamp {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .smart-suggestions {
+            background: #f0f8ff;
+            border: 1px solid #e6f3ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .smart-suggestions h4 {
+            margin: 0 0 10px 0;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(72, 187, 120, 0.1);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+            border-radius: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #48bb78;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .data-sync {
+            background: rgba(66, 153, 225, 0.1);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sync-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sync-progress {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .sync-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #667eea);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .nav-tab {
+                min-width: auto;
+            }
+
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 SmartAgri Pro</h1>
+            <p>Advanced Farmer Platform with Backend-like Features</p>
+        </div>
+
+        <!-- API Status Indicator -->
+        <div class="api-status">
+            <div class="status-indicator"></div>
+            <span><strong>Backend Services:</strong> All systems operational</span>
+            <span id="serverTime"></span>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('mandi')">📊 Live Prices</button>
+            <button class="nav-tab" onclick="showSection('weather')">🌤️ Weather API</button>
+            <button class="nav-tab" onclick="showSection('knowledge')">📚 Knowledge Base</button>
+            <button class="nav-tab" onclick="showSection('chatbot')">🤖 AI Assistant</button>
+            <button class="nav-tab" onclick="showSection('database')">💾 Data Center</button>
+        </div>
+
+        <!-- Mandi Prices Section -->
+        <div id="mandi" class="content-section active">
+            <h2 class="section-title">📊 Live Market Data</h2>
+            
+            <div class="data-sync">
+                <div class="sync-status">
+                    <span><strong>Market Data Sync:</strong> <span id="lastSync">Just now</span></span>
+                    <button class="btn" onclick="syncMarketData()" style="padding: 8px 16px; font-size: 0.8rem;">🔄 Refresh</button>
+                </div>
+                <div class="sync-progress">
+                    <div class="sync-progress-bar" id="syncProgress" style="width: 100%;"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Select Crop</label>
+                    <select class="control-select" id="cropSelect" onchange="updatePrices()">
+                        <option value="wheat">Wheat</option>
+                        <option value="rice">Rice</option>
+                        <option value="cotton">Cotton</option>
+                        <option value="sugarcane">Sugarcane</option>
+                        <option value="maize">Maize</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Select Market</label>
+                    <select class="control-select" id="marketSelect" onchange="updatePrices()">
+                        <option value="delhi">Delhi</option>
+                        <option value="mumbai">Mumbai</option>
+                        <option value="pune">Pune</option>
+                        <option value="bangalore">Bangalore</option>
+                        <option value="hyderabad">Hyderabad</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="exportData()">📥 Export Data</button>
+            </div>
+
+            <div class="grid grid-3" id="priceGrid">
+                <!-- Price cards will be populated by JavaScript -->
+            </div>
+
+            <div class="chart-container">
+                <h3>Real-time Price Analytics</h3>
+                <canvas id="priceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Weather Section -->
+        <div id="weather" class="content-section">
+            <h2 class="section-title">🌤️ Weather Intelligence</h2>
+            
+            <div class="data-sync">
+                <div class="sync-status">
+                    <span><strong>Weather API Status:</strong> <span style="color: #48bb78;">● Connected</span></span>
+                    <span>Last Update: <span id="weatherSync">2 min ago</span></span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Select Location</label>
+                    <select class="control-select" id="citySelect" onchange="updateWeather()">
+                        <option value="delhi">Delhi</option>
+                        <option value="mumbai">Mumbai</option>
+                        <option value="pune">Pune</option>
+                        <option value="bangalore">Bangalore</option>
+                        <option value="hyderabad">Hyderabad</option>
+                        <option value="chennai">Chennai</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="fetchWeatherData()">🌐 Fetch Live Data</button>
+            </div>
+
+            <div class="grid grid-2" id="weatherGrid">
+                <!-- Weather cards will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Knowledge Hub Section -->
+        <div id="knowledge" class="content-section">
+            <h2 class="section-title">📚 Knowledge Database</h2>
+            
+            <div class="data-sync">
+                <div class="sync-status">
+                    <span><strong>Knowledge Base:</strong> 2,847 articles indexed</span>
+                    <button class="btn" onclick="searchKnowledge()" style="padding: 8px 16px; font-size: 0.8rem;">🔍 Search</button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label class="control-label">Search Articles</label>
+                    <input type="text" class="control-input" id="searchInput" placeholder="Search farming topics..." onkeyup="searchArticles()">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Filter by Category</label>
+                    <select class="control-select" id="categoryFilter" onchange="filterTips()">
+                        <option value="all">All Categories</option>
+                        <option value="soil">Soil Management</option>
+                        <option value="irrigation">Irrigation</option>
+                        <option value="pest">Pest Control</option>
+                        <option value="harvest">Harvesting</option>
+                        <option value="crop">Crop Selection</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-2" id="tipsGrid">
+                <!-- Tips will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Chatbot Section -->
+        <div id="chatbot" class="content-section">
+            <h2 class="section-title">🤖 AI-Powered Assistant</h2>
+            
+            <div class="data-sync">
+                <div class="sync-status">
+                    <span><strong>AI Model:</strong> AgriBot v2.1 (Neural Network)</span>
+                    <span><strong>Response Time:</strong> <span id="responseTime">~1.2s</span></span>
+                </div>
+            </div>
+            
+            <div class="quick-questions">
+                <div class="quick-question" onclick="askQuestion('How to improve soil health?')">Soil Health</div>
+                <div class="quick-question" onclick="askQuestion('Best irrigation practices?')">Irrigation Tips</div>
+                <div class="quick-question" onclick="askQuestion('Pest control methods?')">Pest Control</div>
+                <div class="quick-question" onclick="askQuestion('When to harvest crops?')">Harvest Time</div>
+                <div class="quick-question" onclick="askQuestion('Market price analysis?')">Price Analysis</div>
+            </div>
+
+            <div class="chatbot-container">
+                <div class="chat-header" style="position: relative;">
+                    🤖 AgriBot AI - Neural Network Assistant
+                    <div class="user-profile-indicator" id="userProfileIndicator" style="display: none;">
+                        <span id="profileInfo"></span>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot">
+                        <div class="message-avatar bot-avatar">🤖</div>
+                        <div class="message-content">
+                            Welcome to AgriBot AI! I'm powered by advanced neural networks and connected to live agricultural databases. I can provide real-time market analysis, weather-based recommendations, and personalized farming advice. How can I help optimize your farming today?
+                            <div class="message-timestamp">Just now</div>
+                        </div>
+                    </div>
+                    <div class="smart-suggestions">
+                        <h4>🧠 AI-Powered Features:</h4>
+                        <div class="suggestion-buttons">
+                            <button class="suggestion-btn" onclick="askQuestion('Analyze current market trends')">Market Analysis</button>
+                            <button class="suggestion-btn" onclick="askQuestion('Weather impact on my crops')">Weather Impact</button>
+                            <button class="suggestion-btn" onclick="askQuestion('Optimize my farming schedule')">Schedule Optimization</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-stats" id="chatStats">
+                    <span>Session: <span id="sessionId">AGR-2024-001</span></span>
+                    <span>Messages: <span id="messageCount">1</span></span>
+                    <span>AI Status: <span style="color: #48bb78;">● Online</span></span>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything about farming, markets, weather, or optimization..." onkeypress="handleChatKeyPress(event)">
+                    <button class="chat-send" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Section -->
+        <div id="database" class="content-section">
+            <h2 class="section-title">💾 Data Management Center</h2>
+            
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3>📊 Database Statistics</h3>
+                    <div style="display: grid; gap: 15px; margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Market Records:</span>
+                            <strong id="marketRecords">15,847</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Weather Data Points:</span>
+                            <strong id="weatherRecords">89,234</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>User Interactions:</span>
+                            <strong id="userInteractions">3,456</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Knowledge Articles:</span>
+                            <strong>2,847</strong>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="refreshStats()" style="margin-top: 15px; width: 100%;">🔄 Refresh Stats</button>
+                </div>
+
+                <div class="card">
+                    <h3>🔄 Data Synchronization</h3>
+                    <div style="margin: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>Market Data:</span>
+                            <span style="color: #48bb78;">✓ Synced</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>Weather API:</span>
+                            <span style="color: #48bb78;">✓ Connected</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>User Profiles:</span>
+                            <span style="color: #48bb78;">✓ Updated</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>AI Model:</span>
+                            <span style="color: #48bb78;">✓ Active</span>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="syncAllData()" style="width: 100%;">🌐 Sync All Data</button>
+                </div>
+                
+                <div class="card">
+                    <h3>💾 Data Export & Backup</h3>
+                    <div style="display: grid; gap: 10px; margin: 15px 0;">
+                        <button class="btn" onclick="exportUserData()">📥 Export User Data</button>
+                        <button class="btn" onclick="exportMarketData()">📊 Export Market Data</button>
+                        <button class="btn" onclick="exportChatHistory()">💬 Export Chat History</button>
+                        <button class="btn" onclick="createBackup()">🔒 Create Backup</button>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #718096; margin-top: 10px;">
+                        Last backup: <span id="lastBackup">Today, 2:30 PM</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated Backend Database
+        class AgriDatabase {
+            constructor() {
+                this.initializeDatabase();
+                this.setupAutoSync();
+            }
+
+            initializeDatabase() {
+                // Initialize local storage as database
+                if (!localStorage.getItem('agri_market_data')) {
+                    this.seedDatabase();
+                }
+                
+                this.marketData = JSON.parse(localStorage.getItem('agri_market_data'));
+                this.weatherData = JSON.parse(localStorage.getItem('agri_weather_data'));
+                this.userProfiles = JSON.parse(localStorage.getItem('agri_user_profiles')) || {};
+                this.chatHistory = JSON.parse(localStorage.getItem('agri_chat_history')) || [];
+                this.knowledgeBase = JSON.parse(localStorage.getItem('agri_knowledge_base'));
+            }
+
+            seedDatabase() {
+                // Seed initial data
+                const marketData = {
+                    wheat: {
+                        delhi: { price: 2150, trend: 'up', change: 5.2, volume: 1250, lastUpdate: new Date().toISOString() },
+                        mumbai: { price: 2200, trend: 'up', change: 3.1, volume: 980, lastUpdate: new Date().toISOString() },
+                        pune: { price: 2180, trend: 'down', change: -2.1, volume: 1100, lastUpdate: new Date().toISOString() },
+                        bangalore: { price: 2250, trend: 'up', change: 4.5, volume: 850, lastUpdate: new Date().toISOString() },
+                        hyderabad: { price: 2170, trend: 'up', change: 2.8, volume: 1050, lastUpdate: new Date().toISOString() }
+                    },
+                    rice: {
+                        delhi: { price: 3200, trend: 'down', change: -1.5, volume: 2100, lastUpdate: new Date().toISOString() },
+                        mumbai: { price: 3350, trend: 'up', change: 2.3, volume: 1800, lastUpdate: new Date().toISOString() },
+                        pune: { price: 3180, trend: 'up', change: 1.8, volume: 1950, lastUpdate: new Date().toISOString() },
+                        bangalore: { price: 3400, trend: 'up', change: 3.2, volume: 1650, lastUpdate: new Date().toISOString() },
+                        hyderabad: { price: 3250, trend: 'down', change: -0.8, volume: 1750, lastUpdate: new Date().toISOString() }
+                    }
+                };
+
+                const weatherData = {
+                    delhi: { temp: 28, humidity: 65, rainfall: 20, condition: 'Partly Cloudy', windSpeed: 12, pressure: 1013, lastUpdate: new Date().toISOString() },
+                    mumbai: { temp: 32, humidity: 78, rainfall: 45, condition: 'Humid', windSpeed: 8, pressure: 1009, lastUpdate: new Date().toISOString() },
+                    pune: { temp: 26, humidity: 60, rainfall: 15, condition: 'Clear', windSpeed: 15, pressure: 1015, lastUpdate: new Date().toISOString() }
+                };
+
+                const knowledgeBase = [
+                    {
+                        id: 1,
+                        title: "Advanced Soil pH Management",
+                        category: "soil",
+                        content: "Comprehensive guide to soil pH testing and management for optimal crop growth.",
+                        tags: ["soil", "ph", "testing", "management"],
+                        views: 1250,
+                        rating: 4.8,
+                        lastUpdated: new Date().toISOString()
+                    },
+                    {
+                        id: 2,
+                        title: "Smart Irrigation Systems",
+                        category: "irrigation",
+                        content: "Modern irrigation techniques including drip systems and sensor-based watering.",
+                        tags: ["irrigation", "drip", "sensors", "water"],
+                        views: 980,
+                        rating: 4.9,
+                        lastUpdated: new Date().toISOString()
+                    }
+                ];
+
+                localStorage.setItem('agri_market_data', JSON.stringify(marketData));
+                localStorage.setItem('agri_weather_data', JSON.stringify(weatherData));
+                localStorage.setItem('agri_knowledge_base', JSON.stringify(knowledgeBase));
+            }
+
+            setupAutoSync() {
+                // Simulate real-time data updates
+                setInterval(() => {
+                    this.updateMarketPrices();
+                    this.updateWeatherData();
+                }, 30000); // Update every 30 seconds
+            }
+
+            updateMarketPrices() {
+                for (let crop in this.marketData) {
+                    for (let market in this.marketData[crop]) {
+                        const data = this.marketData[crop][market];
+                        // Simulate price fluctuations
+                        const change = (Math.random() - 0.5) * 10;
+                        data.price = Math.max(100, Math.round(data.price + change));
+                        data.change = parseFloat(((change / data.price) * 100).toFixed(2));
+                        data.trend = change > 0 ? 'up' : 'down';
+                        data.lastUpdate = new Date().toISOString();
+                    }
+                }
+                localStorage.setItem('agri_market_data', JSON.stringify(this.marketData));
+            }
+
+            updateWeatherData() {
+                for (let city in this.weatherData) {
+                    const data = this.weatherData[city];
+                    // Simulate weather changes
+                    data.temp += (Math.random() - 0.5) * 2;
+                    data.humidity += (Math.random() - 0.5) * 5;
+                    data.rainfall = Math.max(0, data.rainfall + (Math.random() - 0.5) * 10);
+                    data.lastUpdate = new Date().toISOString();
+                }
+                localStorage.setItem('agri_weather_data', JSON.stringify(this.weatherData));
+            }
+
+            // API-like methods
+            async getMarketData(crop, market) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 200));
+                return this.marketData[crop]?.[market] || null;
+            }
+
+            async getWeatherData(city) {
+                await new Promise(resolve => setTimeout(resolve, 150));
+                return this.weatherData[city] || null;
+            }
+
+            async saveUserProfile(profile) {
+                const userId = profile.id || 'user_' + Date.now();
+                this.userProfiles[userId] = { ...profile, lastUpdated: new Date().toISOString() };
+                localStorage.setItem('agri_user_profiles', JSON.stringify(this.userProfiles));
+                return userId;
+            }
+
+            async saveChatMessage(message) {
+                this.chatHistory.push({
+                    ...message,
+                    id: 'msg_' + Date.now(),
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('agri_chat_history', JSON.stringify(this.chatHistory));
+            }
+
+            async searchKnowledge(query) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return this.knowledgeBase.filter(article => 
+                    article.title.toLowerCase().includes(query.toLowerCase()) ||
+                    article.content.toLowerCase().includes(query.toLowerCase()) ||
+                    article.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+                );
+            }
+
+            getStats() {
+                return {
+                    marketRecords: Object.keys(this.marketData).length * 5,
+                    weatherRecords: Object.keys(this.weatherData).length * 100,
+                    userInteractions: this.chatHistory.length,
+                    knowledgeArticles: this.knowledgeBase.length
+                };
+            }
+        }
+
+        // Initialize database
+        const agriDB = new AgriDatabase();
+
+        // Enhanced chatbot with backend integration
+        let conversationHistory = [];
+        let userProfile = {
+            name: null,
+            location: null,
+            cropType: null,
+            farmSize: null,
+            experience: null
+        };
+
+        const chatbotKnowledge = {
+            soil: {
+                keywords: ['soil', 'ph', 'fertility', 'nutrients', 'compost', 'organic matter'],
+                responses: [
+                    'Based on our database analysis, soil health optimization requires: 1) Regular pH testing (ideal: 6.0-7.0), 2) Organic matter addition (2-3 inches annually), 3) Micronutrient monitoring, 4) Compaction prevention. Our AI recommends soil testing every 6 months for optimal results.',
+                    'Our neural network has analyzed 15,000+ soil samples. Key insights: Soil pH affects nutrient availability by 40-60%. Adding compost increases water retention by 25%. Would you like me to analyze your specific soil conditions?',
+                    'Real-time soil data shows optimal conditions vary by region. Based on current weather patterns and your location, I recommend specific soil amendments. Shall I create a personalized soil management plan?'
+                ]
+            },
+            
+            irrigation: {
+                keywords: ['water', 'irrigation', 'drip', 'sprinkler', 'drought', 'moisture'],
+                responses: [
+                    'Our irrigation AI has processed 50,000+ farm data points. Optimal strategy: 1) Drip systems save 30-50% water, 2) Soil moisture sensors reduce overwatering by 40%, 3) Weather-based scheduling improves efficiency by 25%. Current weather data suggests adjusting your irrigation schedule.',
+                    'Based on real-time weather analysis and your crop type, I recommend precision irrigation. Our database shows farmers using smart irrigation increase yields by 15-20% while reducing water usage. Would you like a customized irrigation plan?',
+                    'Live weather data indicates changing moisture patterns in your area. Our AI suggests adaptive irrigation scheduling based on 7-day forecasts, soil type analysis, and crop growth stage monitoring.'
+                ]
+            },
+            
+            market: {
+                keywords: ['price', 'market', 'sell', 'profit', 'cost', 'mandi', 'economics'],
+                responses: [
+                    'Market intelligence update: Our AI analyzes 1000+ daily price points. Current trends show seasonal variations of 15-25%. Best selling windows identified through predictive modeling. Would you like real-time price alerts for your crops?',
+                    'Based on historical data analysis and current market conditions, optimal selling strategy involves timing and diversification. Our database shows 30% higher profits with strategic timing. Shall I create a personalized market strategy?',
+                    'Live market data integration shows price fluctuations across 50+ mandis. Our neural network predicts price trends with 85% accuracy. Current recommendation: monitor our real-time price dashboard for optimal selling opportunities.'
+                ]
+            }
+        };
+
+        let priceChart = null;
+        let performanceChart = null;
+
+        // Navigation functions
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (sectionId === 'mandi') {
+                updatePrices();
+            } else if (sectionId === 'weather') {
+                updateWeather();
+            } else if (sectionId === 'knowledge') {
+                loadTips();
+            } else if (sectionId === 'database') {
+                loadDatabaseStats();
+            }
+        }
+
+        // Enhanced market functions with backend simulation
+        async function updatePrices() {
+            const crop = document.getElementById('cropSelect').value;
+            const priceGrid = document.getElementById('priceGrid');
+            
+            priceGrid.innerHTML = '<div style="text-align: center; padding: 20px;">🔄 Fetching live market data...</div>';
+            
+            try {
+                const marketData = agriDB.marketData[crop];
+                priceGrid.innerHTML = '';
+                
+                for (let marketName in marketData) {
+                    const data = marketData[marketName];
+                    const card = document.createElement('div');
+                    card.className = 'card price-card';
+                    
+                    const trendIcon = data.trend === 'up' ? '📈' : '📉';
+                    const trendClass = data.trend === 'up' ? 'trend-up' : 'trend-down';
+                    const trendText = data.trend === 'up' ? `+${data.change}%` : `${data.change}%`;
+                    
+                    card.innerHTML = `
+                        <h3>${marketName.charAt(0).toUpperCase() + marketName.slice(1)} Market</h3>
+                        <div class="price-amount">₹${data.price}</div>
+                        <div class="price-trend ${trendClass}">
+                            ${trendIcon} ${trendText}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.8rem; color: #718096;">
+                            <span>Volume: ${data.volume} tons</span>
+                            <span>Updated: ${new Date(data.lastUpdate).toLocaleTimeString()}</span>
+                        </div>
+                    `;
+                    
+                    priceGrid.appendChild(card);
+                }
+                
+                updatePriceChart(crop);
+                updateLastSync();
+                
+            } catch (error) {
+                priceGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #f56565;">❌ Error fetching market data</div>';
+            }
+        }
+
+        async function syncMarketData() {
+            const progressBar = document.getElementById('syncProgress');
+            progressBar.style.width = '0%';
+            
+            // Simulate sync process
+            for (let i = 0; i <= 100; i += 10) {
+                progressBar.style.width = i + '%';
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            agriDB.updateMarketPrices();
+            updatePrices();
+        }
+
+        function updateLastSync() {
+            document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Enhanced weather functions
+        async function updateWeather() {
+            const city = document.getElementById('citySelect').value;
+            const weatherGrid = document.getElementById('weatherGrid');
+            
+            weatherGrid.innerHTML = '<div style="text-align: center; padding: 20px;">🌐 Connecting to weather API...</div>';
+            
+            try {
+                const currentData = await agriDB.getWeatherData(city);
+                weatherGrid.innerHTML = '';
+                
+                const currentCard = document.createElement('div');
+                currentCard.className = 'card weather-card';
+                currentCard.innerHTML = `
+                    <h3>Live Weather - ${city.charAt(0).toUpperCase() + city.slice(1)}</h3>
+                    <div class="weather-temp">${Math.round(currentData.temp)}°C</div>
+                    <p style="color: #4299e1; font-weight: 600; margin: 10px 0;">${currentData.condition}</p>
+                    <div class="weather-details">
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">Humidity</div>
+                            <div class="weather-detail-value">${Math.round(currentData.humidity)}%</div>
+                        </div>
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">Rain Chance</div>
+                            <div class="weather-detail-value">${Math.round(currentData.rainfall)}%</div>
+                        </div>
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">Wind Speed</div>
+                            <div class="weather-detail-value">${currentData.windSpeed} km/h</div>
+                        </div>
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">Pressure</div>
+                            <div class="weather-detail-value">${currentData.pressure} mb</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #718096; margin-top: 10px; text-align: center;">
+                        Last updated: ${new Date(currentData.lastUpdate).toLocaleTimeString()}
+                    </div>
+                `;
+                weatherGrid.appendChild(currentCard);
+                
+                // AI-powered farming recommendations
+                const recommendationCard = document.createElement('div');
+                recommendationCard.className = 'card';
+                recommendationCard.innerHTML = `
+                    <h3>🤖 AI Farming Recommendations</h3>
+                    <div style="margin: 15px 0;">
+                        ${getWeatherBasedRecommendations(currentData)}
+                    </div>
+                `;
+                weatherGrid.appendChild(recommendationCard);
+                
+            } catch (error) {
+                weatherGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #f56565;">❌ Weather API connection failed</div>';
+            }
+        }
+
+        function getWeatherBasedRecommendations(weatherData) {
+            let recommendations = [];
+            
+            if (weatherData.temp > 35) {
+                recommendations.push('🌡️ High temperature alert: Increase irrigation frequency and provide shade for sensitive crops.');
+            }
+            
+            if (weatherData.humidity > 80) {
+                recommendations.push('💧 High humidity detected: Monitor for fungal diseases and ensure good air circulation.');
+            }
+            
+            if (weatherData.rainfall > 70) {
+                recommendations.push('🌧️ Heavy rain expected: Ensure proper drainage and delay pesticide applications.');
+            }
+            
+            if (weatherData.windSpeed > 20) {
+                recommendations.push('💨 Strong winds forecasted: Secure tall crops and delay spraying operations.');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('✅ Weather conditions are optimal for most farming activities.');
+            }
+            
+            return recommendations.map(rec => `<div style="margin: 8px 0; padding: 8px; background: #f0f8ff; border-radius: 5px;">${rec}</div>`).join('');
+        }
+
+        async function fetchWeatherData() {
+            document.getElementById('weatherSync').textContent = 'Syncing...';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            agriDB.updateWeatherData();
+            updateWeather();
+            document.getElementById('weatherSync').textContent = 'Just now';
+        }
+
+        // Enhanced knowledge base functions
+        function loadTips() {
+            filterTips();
+        }
+
+        async function searchArticles() {
+            const query = document.getElementById('searchInput').value;
+            if (query.length > 2) {
+                const results = await agriDB.searchKnowledge(query);
+                displaySearchResults(results);
+            } else {
+                filterTips();
+            }
+        }
+
+        function displaySearchResults(results) {
+            const tipsGrid = document.getElementById('tipsGrid');
+            tipsGrid.innerHTML = '';
+            
+            if (results.length === 0) {
+                tipsGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: #718096;">No articles found matching your search.</div>';
+                return;
+            }
+            
+            results.forEach(article => {
+                const card = document.createElement('div');
+                card.className = 'card tip-card';
+                card.innerHTML = `
+                    <div class="tip-category">${article.category.charAt(0).toUpperCase() + article.category.slice(1)}</div>
+                    <h3>${article.title}</h3>
+                    <p style="color: #4a5568; line-height: 1.6;">${article.content}</p>
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.8rem; color: #718096;">
+                        <span>👁️ ${article.views} views</span>
+                        <span>⭐ ${article.rating}/5</span>
+                    </div>
+                `;
+                tipsGrid.appendChild(card);
+            });
+        }
+
+        function filterTips() {
+            const category = document.getElementById('categoryFilter').value;
+            const knowledgeBase = agriDB.knowledgeBase;
+            
+            const filteredTips = category === 'all' 
+                ? knowledgeBase 
+                : knowledgeBase.filter(tip => tip.category === category);
+            
+            displaySearchResults(filteredTips);
+        }
+
+        // Enhanced chatbot functions
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                const startTime = Date.now();
+                
+                addMessage(message, 'user');
+                await agriDB.saveChatMessage({type: 'user', message: message});
+                
+                conversationHistory.push({type: 'user', message: message, timestamp: new Date()});
+                input.value = '';
+                
+                showTypingIndicator();
+                
+                setTimeout(async () => {
+                    hideTypingIndicator();
+                    const response = await getAdvancedBotResponse(message);
+                    addMessage(response, 'bot');
+                    
+                    await agriDB.saveChatMessage({type: 'bot', message: response});
+                    conversationHistory.push({type: 'bot', message: response, timestamp: new Date()});
+                    
+                    const responseTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                    document.getElementById('responseTime').textContent = `~${responseTime}s`;
+                    
+                    setTimeout(() => {
+                        addFollowUpSuggestions(message);
+                    }, 1000);
+                }, 1500 + Math.random() * 1000);
+            }
+        }
+
+        async function getAdvancedBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Extract user profile information
+            extractUserInfo(message);
+            
+            // Market analysis requests
+            if (lowerMessage.includes('market') || lowerMessage.includes('price') || lowerMessage.includes('analysis')) {
+                return await getMarketAnalysis();
+            }
+            
+            // Weather-based recommendations
+            if (lowerMessage.includes('weather') || lowerMessage.includes('climate')) {
+                return await getWeatherAnalysis();
+            }
+            
+            // Database queries
+            if (lowerMessage.includes('data') || lowerMessage.includes('statistics')) {
+                return getDatabaseInsights();
+            }
+            
+            // Find best matching knowledge category
+            let bestMatch = null;
+            let maxScore = 0;
+            
+            for (const [category, data] of Object.entries(chatbotKnowledge)) {
+                const score = calculateRelevanceScore(lowerMessage, data.keywords);
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestMatch = category;
+                }
+            }
+            
+            if (bestMatch && maxScore > 0) {
+                const responses = chatbotKnowledge[bestMatch].responses;
+                let response = responses[Math.floor(Math.random() * responses.length)];
+                return personalizeResponse(response);
+            }
+            
+            return getIntelligentDefault(lowerMessage);
+        }
+
+        async function getMarketAnalysis() {
+            const stats = agriDB.getStats();
+            const marketData = agriDB.marketData;
+            
+            let analysis = `📊 **Live Market Analysis** (Based on ${stats.marketRecords} data points):\n\n`;
+            
+            // Analyze trends across crops
+            let upTrends = 0, downTrends = 0;
+            for (let crop in marketData) {
+                for (let market in marketData[crop]) {
+                    if (marketData[crop][market].trend === 'up') upTrends++;
+                    else downTrends++;
+                }
+            }
+            
+            analysis += `🔹 Market Sentiment: ${upTrends > downTrends ? 'Bullish' : 'Bearish'} (${upTrends} markets up, ${downTrends} down)\n`;
+            analysis += `🔹 AI Recommendation: ${upTrends > downTrends ? 'Good time for selling' : 'Consider holding for better prices'}\n`;
+            analysis += `🔹 Price Volatility: ${Math.random() > 0.5 ? 'Moderate' : 'High'} - Monitor closely\n\n`;
+            analysis += `💡 **Pro Tip**: Our neural network suggests diversifying across 3-4 crops for optimal risk management.`;
+            
+            return analysis;
+        }
+
+        async function getWeatherAnalysis() {
+            const weatherData = agriDB.weatherData;
+            const cities = Object.keys(weatherData);
+            const avgTemp = cities.reduce((sum, city) => sum + weatherData[city].temp, 0) / cities.length;
+            const avgHumidity = cities.reduce((sum, city) => sum + weatherData[city].humidity, 0) / cities.length;
+            
+            let analysis = `🌤️ **Regional Weather Intelligence**:\n\n`;
+            analysis += `🔹 Average Temperature: ${avgTemp.toFixed(1)}°C across monitored regions\n`;
+            analysis += `🔹 Average Humidity: ${avgHumidity.toFixed(1)}%\n`;
+            analysis += `🔹 AI Forecast: ${avgTemp > 30 ? 'Heat stress likely - increase irrigation' : 'Favorable conditions for most crops'}\n\n`;
+            analysis += `🤖 **Smart Recommendations**:\n`;
+            analysis += `• Monitor soil moisture levels every 2-3 days\n`;
+            analysis += `• Adjust irrigation based on real-time weather data\n`;
+            analysis += `• Consider heat-resistant varieties for summer crops`;
+            
+            return analysis;
+        }
+
+        function getDatabaseInsights() {
+            const stats = agriDB.getStats();
+            
+            let insights = `💾 **Database Intelligence Report**:\n\n`;
+            insights += `📊 **Current Statistics**:\n`;
+            insights += `• Market Records: ${stats.marketRecords.toLocaleString()}\n`;
+            insights += `• Weather Data Points: ${stats.weatherRecords.toLocaleString()}\n`;
+            insights += `• User Interactions: ${stats.userInteractions.toLocaleString()}\n`;
+            insights += `• Knowledge Articles: ${stats.knowledgeArticles}\n\n`;
+            insights += `🧠 **AI Insights**:\n`;
+            insights += `• Data accuracy: 98.5%\n`;
+            insights += `• Prediction confidence: 85-92%\n`;
+            insights += `• Real-time sync: Active\n\n`;
+            insights += `💡 All data is processed through our neural network for personalized recommendations!`;
+            
+            return insights;
+        }
+
+        // Database management functions
+        function loadDatabaseStats() {
+            const stats = agriDB.getStats();
+            
+            document.getElementById('marketRecords').textContent = stats.marketRecords.toLocaleString();
+            document.getElementById('weatherRecords').textContent = stats.weatherRecords.toLocaleString();
+            document.getElementById('userInteractions').textContent = stats.userInteractions.toLocaleString();
+            
+            createPerformanceChart();
+        }
+
+        function createPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['6h ago', '5h ago', '4h ago', '3h ago', '2h ago', '1h ago', 'Now'],
+                    datasets: [{
+                        label: 'API Response Time (ms)',
+                        data: [120, 95, 110, 85, 92, 88, 75],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }, {
+                        label: 'Database Queries/min',
+                        data: [450, 520, 480, 610, 580, 650, 720],
+                        borderColor: '#48bb78',
+                        backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Data export functions
+        function exportUserData() {
+            const userData = {
+                profile: userProfile,
+                chatHistory: conversationHistory,
+                timestamp: new Date().toISOString()
+            };
+            
+            downloadJSON(userData, 'user_data.json');
+            showNotification('User data exported successfully!');
+        }
+
+        function exportMarketData() {
+            const marketData = {
+                data: agriDB.marketData,
+                timestamp: new Date().toISOString(),
+                recordCount: agriDB.getStats().marketRecords
+            };
+            
+            downloadJSON(marketData, 'market_data.json');
+            showNotification('Market data exported successfully!');
+        }
+
+        function exportChatHistory() {
+            const chatData = {
+                history: agriDB.chatHistory,
+                userProfile: userProfile,
+                timestamp: new Date().toISOString()
+            };
+            
+            downloadJSON(chatData, 'chat_history.json');
+            showNotification('Chat history exported successfully!');
+        }
+
+        function createBackup() {
+            const backupData = {
+                marketData: agriDB.marketData,
+                weatherData: agriDB.weatherData,
+                userProfiles: agriDB.userProfiles,
+                chatHistory: agriDB.chatHistory,
+                knowledgeBase: agriDB.knowledgeBase,
+                timestamp: new Date().toISOString(),
+                version: '2.1'
+            };
+            
+            downloadJSON(backupData, 'agri_backup.json');
+            document.getElementById('lastBackup').textContent = new Date().toLocaleString();
+            showNotification('Complete backup created successfully!');
+        }
+
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showNotification(message) {
+            // Create a simple notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #48bb78;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Utility functions
+        function refreshStats() {
+            loadDatabaseStats();
+            showNotification('Statistics refreshed!');
+        }
+
+        async function syncAllData() {
+            showNotification('Syncing all data sources...');
+            
+            // Simulate sync process
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            agriDB.updateMarketPrices();
+            agriDB.updateWeatherData();
+            loadDatabaseStats();
+            
+            showNotification('All data synchronized successfully!');
+        }
+
+        function updateServerTime() {
+            document.getElementById('serverTime').textContent = 
+                `Server Time: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Helper functions from previous version
+        function calculateRelevanceScore(message, keywords) {
+            let score = 0;
+            keywords.forEach(keyword => {
+                if (message.includes(keyword)) {
+                    score += 1;
+                    if (message.includes(' ' + keyword + ' ') || message.startsWith(keyword) || message.endsWith(keyword)) {
+                        score += 0.5;
+                    }
+                }
+            });
+            return score;
+        }
+
+        function extractUserInfo(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (lowerMessage.includes('my name is') || lowerMessage.includes('i am') || lowerMessage.includes("i'm")) {
+                const nameMatch = message.match(/(?:my name is|i am|i'm)\s+([a-zA-Z]+)/i);
+                if (nameMatch) {
+                    userProfile.name = nameMatch[1];
+                    agriDB.saveUserProfile(userProfile);
+                }
+            }
+            
+            const locations = ['delhi', 'mumbai', 'pune', 'bangalore', 'hyderabad', 'chennai'];
+            locations.forEach(location => {
+                if (lowerMessage.includes(location)) {
+                    userProfile.location = location;
+                    agriDB.saveUserProfile(userProfile);
+                }
+            });
+            
+            const crops = ['wheat', 'rice', 'cotton', 'sugarcane', 'maize', 'tomato', 'potato', 'onion'];
+            crops.forEach(crop => {
+                if (lowerMessage.includes(crop)) {
+                    userProfile.cropType = crop;
+                    agriDB.saveUserProfile(userProfile);
+                }
+            });
+        }
+
+        function personalizeResponse(response) {
+            if (userProfile.name) {
+                response = response.replace(/\b(Here|This|These)\b/, `${userProfile.name}, $1`);
+            }
+            
+            if (userProfile.location) {
+                response += ` Based on ${userProfile.location} conditions, this is particularly relevant.`;
+            }
+            
+            return response;
+        }
+
+        function getIntelligentDefault(message) {
+            const responses = [
+                'Our AI is analyzing your query against our knowledge base of 50,000+ farming data points. Could you be more specific about your farming challenge?',
+                'I have access to real-time market data, weather intelligence, and agricultural best practices. What specific aspect would you like me to help with?',
+                'My neural network specializes in crop optimization, market analysis, and weather-based recommendations. How can I assist your farming operations today?'
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // Message handling functions (simplified versions of previous functions)
+        function addMessage(content, sender, isTyping = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            if (isTyping) messageDiv.id = 'typing-indicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = `message-avatar ${sender}-avatar`;
+            avatar.textContent = sender === 'bot' ? '🤖' : '👨‍🌾';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (isTyping) {
+                messageContent.innerHTML = `
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span style="font-size: 0.8rem; color: #718096;">AI processing...</span>
+                `;
+            } else {
+                messageContent.textContent = content;
+                const timestamp = document.createElement('div');
+                timestamp.className = 'message-timestamp';
+                timestamp.textContent = new Date().toLocaleTimeString();
+                messageContent.appendChild(timestamp);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            addMessage('', 'bot', true);
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function addFollowUpSuggestions(originalMessage) {
+            const suggestions = getContextualSuggestions(originalMessage.toLowerCase());
+            if (suggestions.length > 0) {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'message bot';
+                suggestionDiv.innerHTML = `
+                    <div class="message-avatar bot-avatar">💡</div>
+                    <div class="message-content">
+                        <div style="font-size: 0.9rem; color: #4a5568; margin-bottom: 10px;">Related topics you might find helpful:</div>
+                        <div class="suggestion-buttons">
+                            ${suggestions.map(suggestion => 
+                                `<button class="suggestion-btn" onclick="askQuestion('${suggestion}')">${suggestion}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('chatMessages').appendChild(suggestionDiv);
+                document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+            }
+        }
+
+        function getContextualSuggestions(message) {
+            if (message.includes('market') || message.includes('price')) {
+                return ['Price trend analysis', 'Best selling time', 'Market diversification'];
+            }
+            if (message.includes('weather')) {
+                return ['Irrigation scheduling', 'Crop protection', 'Seasonal planning'];
+            }
+            if (message.includes('soil')) {
+                return ['Nutrient management', 'pH optimization', 'Organic amendments'];
+            }
+            return ['Market insights', 'Weather alerts', 'Crop recommendations'];
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function updatePriceChart(crop) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            const labels = [];
+            const data = [];
+            const basePrice = agriDB.marketData[crop]['delhi'].price;
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }));
+                
+                const variation = (Math.random() - 0.5) * 100;
+                data.push(Math.round(basePrice + variation));
+            }
+            
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${crop.charAt(0).toUpperCase() + crop.slice(1)} Price (₹/quintal)`,
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePrices();
+            updateWeather();
+            loadTips();
+            loadDatabaseStats();
+            
+            // Update server time every second
+            setInterval(updateServerTime, 1000);
+            updateServerTime();
+            
+            // Generate session ID
+            document.getElementById('sessionId').textContent = 'AGR-' + new Date().getFullYear() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9872836c517f3a1b',t:'MTc1OTIyMjY1NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
